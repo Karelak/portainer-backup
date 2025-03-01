@@ -22,26 +22,29 @@
 # *********************************************************************
 #       COPYRIGHT SAVAGESOFTWARE,LLC, @ 2022, ALL RIGHTS RESERVED
 # *********************************************************************
-version: '3.8'
+version: '3'
 
 services:
   portainer-backup:
-    container_name: portainer-backup
-    image: savagesoftware/portainer-backup:latest
-    hostname: portainer-backup
+    image: portainer-backup:latest
+    build: .
+    container_name: portainer_backup
     restart: unless-stopped
-    command: schedule
-    environment:
-      TZ: America/New_York
-      PORTAINER_BACKUP_URL: "http://portainer:9000"
-      PORTAINER_BACKUP_TOKEN: "PORTAINER_ACCESS_TOKEN"
-      PORTAINER_BACKUP_PASSWORD: ""
-      PORTAINER_BACKUP_OVERWRITE: 1
-      PORTAINER_BACKUP_SCHEDULE: "0 0 0 * * *"
-      PORTAINER_BACKUP_STACKS: 1
-      PORTAINER_BACKUP_DRYRUN: 0
-      PORTAINER_BACKUP_CONCISE: 1
-      PORTAINER_BACKUP_DIRECTORY: "/backup"
-      PORTAINER_BACKUP_FILENAME: "portainer-backup.tar.gz"
     volumes:
-      - /var/backup:/backup
+      - portainer-data:/data:ro
+      - portainer-rclone-data:/config
+    environment:
+      - DATA_DIR=/data
+      - TIMEZONE=UTC
+      - CRON=0 0 * * *                 # Daily backup at midnight
+      - RCLONE_REMOTE_NAME=PortainerBackup
+      - RCLONE_REMOTE_DIR=/PortainerBackup/
+      - ZIP_ENABLE=TRUE
+      - ZIP_TYPE=7Z
+      - BACKUP_KEEP_DAYS=30
+
+volumes:
+  portainer-data:
+    external: true
+  portainer-rclone-data:
+    external: false

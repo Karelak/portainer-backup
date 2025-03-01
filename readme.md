@@ -703,3 +703,20 @@ Supported Docker platforms:
   * `linux/arm` (ARMv7)
 
 ---
+
+# Portainer Backup with rclone
+
+This tool helps you automatically backup Portainer data to various cloud storage providers using rclone.
+
+## Features
+
+- Scheduled backups using cron expressions
+- Compression with optional password protection
+- Multiple cloud storage destinations
+- Retention policy for old backups
+- Supports all storage providers that rclone supports
+
+## Quick Start
+
+### 1. Configure and Build
+```

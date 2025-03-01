@@ -1,3 +1,5 @@
+# syntax=docker/dockerfile:1
+
 # *********************************************************************
 #    ___   ___   ___   ___ ___                
 #   / __| /_\ \ / /_\ / __| __|               
@@ -20,53 +22,20 @@
 # *********************************************************************
 #       COPYRIGHT SAVAGESOFTWARE,LLC, @ 2022, ALL RIGHTS RESERVED
 # *********************************************************************
-FROM node:lts-alpine
+FROM rclone/rclone:1.69.1
 
-# IMAGE ARGUMENTS PASSED IN FROM BUILDER
-ARG TARGETARCH
-ARG BUILDDATE
-ARG BUILDVERSION
+ARG USER_NAME="backuptool"
+ARG USER_ID="1100"
 
-# PROVIDE IMAGE LABLES
-LABEL "com.example.vendor"="ACME Incorporated"
-LABEL vendor="Savage Software, LLC"
-LABEL maintainer="Robert Savage"
-LABEL version="$VERSION"
-LABEL description="Utility for scripting or scheduling scheduled backups for Portainer"
-LABEL url="https://github.com/SavageSoftware/portainer-backup"
-LABEL org.label-schema.schema-version="$VERSION"
-LABEL org.label-schema.build-date="$BUILDDATE"
-LABEL org.label-schema.name="savagesoftware/portainer-backup"
-LABEL org.label-schema.description="Utility for scripting or scheduling scheduled backups for Portainer"
-LABEL org.label-schema.url="https://github.com/SavageSoftware/portainer-backup"
-LABEL org.label-schema.vcs-url="https://github.com/SavageSoftware/portainer-backup.git"
-LABEL org.label-schema.vendor="Savage Software, LLC"
-LABEL org.label-schema.version=$VERSION
-LABEL org.label-schema.docker.cmd="docker run -it --rm --name portainer-backup --volume $PWD/backup:/backup savagesoftware/portainer-backup:latest backup"
+ENV LOCALTIME_FILE="/tmp/localtime"
 
-# INSTALL ADDITIONAL IMAGE DEPENDENCIES AND COPY APPLICATION TO IMAGE
-RUN apk update && apk add --no-cache tzdata
-RUN mkdir -p /portainer-backup/src
-COPY package.json /portainer-backup
-COPY src/*.js /portainer-backup/src
-WORKDIR /portainer-backup
-VOLUME "/backup"
-RUN npm install --silent
+COPY scripts/*.sh /app/
 
-# DEFAULT ENV VARIABLE VALUES
-ENV TZ="America/New_York" 
-ENV PORTAINER_BACKUP_URL="http://portainer:9000"
-ENV PORTAINER_BACKUP_TOKEN=""
-ENV PORTAINER_BACKUP_DIRECTORY="/backup"
-ENV PORTAINER_BACKUP_FILENAME="/portainer-backup.tar.gz"
-ENV PORTAINER_BACKUP_OVERWRITE=false
-ENV PORTAINER_BACKUP_CONCISE=false
-ENV PORTAINER_BACKUP_DEBUG=false
-ENV PORTAINER_BACKUP_DRYRUN=false
-ENV PORTAINER_BACKUP_STACKS=false
+RUN chmod +x /app/*.sh \
+  && mkdir -m 777 /portainer \
+  && apk add --no-cache 7zip bash curl supercronic tzdata zip \
+  && ln -sf "${LOCALTIME_FILE}" /etc/localtime \
+  && addgroup -g "${USER_ID}" "${USER_NAME}" \
+  && adduser -u "${USER_ID}" -Ds /bin/sh -G "${USER_NAME}" "${USER_NAME}"
 
-# NODEJS RUNNING THIS APPLICATION IS THE ENTRYPOINT
-ENTRYPOINT [ "/usr/local/bin/node", "/portainer-backup/src/index.js" ]
-
-# DEFAULT COMMAND (if none provided)
-CMD ["schedule"]
+ENTRYPOINT ["/app/entrypoint.sh"]
